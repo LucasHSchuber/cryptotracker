@@ -1,0 +1,15 @@
+/* buttons */
+
+.button{
+    border: 1px solid #eeeeee;
+    color: #eeeeee;
+    border-radius: 6px;
+    background-color: rgb(60, 60, 60);
+    padding: 0.5em 1em;
+}
+.button:hover{
+
+    border-radius: 5px;
+    background-color: rgb(92, 92, 92);
+    
+}

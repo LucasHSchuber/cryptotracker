@@ -1,0 +1,33 @@
+html, body, .wrapper{
+    background-color: rgb(25, 25, 25);
+    color: white;
+    
+}
+
+.wrapper {
+    padding: 2em 4em;
+}
+.crypto-graph{
+    margin-top: 5em;
+    padding: 2em;
+    background-color: #f9f9f9;
+    border-radius: 8px;    
+}
+.icon-box{
+    padding: 1em;
+    border-radius: 15px;
+    width: 40%;
+    background-color: rgb(54, 54, 54);
+}
+.icon{
+    background-color:rgb(58, 58, 58);
+    border-radius: 10px;
+    padding: 0.5em;
+    margin: 1em 0.5em;
+    transition: 0.2s;
+    width: 60px;
+    height: 60px;
+}
+.icon:hover{
+    background-color: rgb(68, 68, 68);
+}

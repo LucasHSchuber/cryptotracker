@@ -2,9 +2,18 @@ import React, { useEffect, useState } from 'react';
 import ApexCharts from 'react-apexcharts';
 import axios from 'axios'; 
 
+
+// import components
 import Header from "../components/header"
 
-import API from '../../env'; 
+// import ENV.ts file
+import API from '../../env';
+
+// import fontawwesome
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowTrendUp, faArrowTrendDown } from '@fortawesome/free-solid-svg-icons';
+// import {  } from '@fortawesome/free-brands-svg-icons';
+
 
 const CryptoTracker = () => {
   const [cryptoData, setCryptoData] = useState([]);
@@ -13,13 +22,21 @@ const CryptoTracker = () => {
   const [icon, setIcon] = useState(null); 
   const [icons, setIcons] = useState(null); 
 
+  const [chartColor, setChartColor] = useState('#000'); 
+
+  const [timeSpan, setTimeSpan] = useState('24h'); 
+  
+  //24 hour
+  const [dayPercentage, setDayPercentage] = useState(""); 
+
+
   const [showAll, setShowAll] = useState(false);
   
   const [cryptoUuid, setCryptoUuid] = useState("");
 
 
 
-  console.log('API', API);
+  
 
   useEffect(() => {
     const fetchIcons = async () => {
@@ -29,16 +46,15 @@ const CryptoTracker = () => {
                 'x-access-token': API.API_KEY
               }
             });
-
+            console.log('response', response);
             const icons = response.data.data.coins.map(coin => ({
                 uuid: coin.uuid,
                 iconUrl: coin.iconUrl,
                 name: coin.name
             }));
-            // if (!icons) {
               setIcons(icons);
               console.log("icon updated");
-            // }
+
           } catch (error) {
             console.error('Error fetching icon data:', error);
           }
@@ -58,22 +74,39 @@ const CryptoTracker = () => {
           }
         });
         console.log('response', response);
+        const price = parseFloat(response.data.data.coin.price);
   
-          const price = parseFloat(response.data.data.coin.price);
-  
-        // Only update if the price has changed
         if (lastPrice !== price) {
           const newPoint = { x: new Date(), y: price };
           setCryptoData((prevData) => [...prevData, newPoint]);
-          setLastPrice(price);
-        } else {
-            setOldPrice(price);
-        }
+          setChartColor(price > lastPrice ? '#00ff00' : '#ff0000');  
+          setOldPrice(lastPrice);
+          setLastPrice(price);      
+        } 
       } catch (error) {
         console.error('Error fetching crypto data:', error);
       }
     };
+
+    const fetchHistoryData = async () => {
+        console.log('cryptoUuid', cryptoUuid);
+        try {
+          const historyresponse = await axios.get(`${API.API_URL_COIN}/${cryptoUuid}/history?timePeriod=${timeSpan}`, {
+            headers: {
+              'x-access-token': API.API_KEY
+            }
+          });
+          console.log('historyresponse', historyresponse);
+          console.log('historyresponse.data.data.change', historyresponse.data.data.change);
+          // set24HourHistory()
+          setDayPercentage(historyresponse.data.data.change);
+
+        } catch (error) {
+          console.error('Error fetching history data:', error);
+        }
+      };
   
+    fetchHistoryData()
     // Call fetchData immediately and then every 5 seconds
     fetchData(); 
     const interval = setInterval(fetchData, 5000); 
@@ -97,10 +130,6 @@ const CryptoTracker = () => {
 
 
 
-
-
-
-
   useEffect(() => {
     console.log('cryptoData', cryptoData);
   }, [cryptoData]);
@@ -109,10 +138,8 @@ const CryptoTracker = () => {
   }, [icons]);
   useEffect(() => {
     console.log('lastPrice', lastPrice);
-  }, [lastPrice]);
-  useEffect(() => {
     console.log('oldPrice', oldPrice);
-  }, [oldPrice]);
+  }, [lastPrice, oldPrice]);
 
 
 
@@ -129,7 +156,7 @@ const CryptoTracker = () => {
       },
       background: '#f9f9f9',
     },
-    colors: ['#000'],
+    colors: [chartColor],
     xaxis: {
         type: 'datetime',
         labels: {
@@ -165,33 +192,50 @@ const CryptoTracker = () => {
   return (
     <div className='wrapper'>
     <Header />
-       
-    <div className='d-flex justify-content-between'>
-        <div>
 
+
+    <div className=''>
+        {icons && (icons.slice(0, 5)).map((i) => (
+            <div 
+                className='crypto-row-box d-flex' 
+                key={i.uuid} 
+                title={i.name} 
+                onClick={() => handleSelectCrypto(i)}
+            >
+                <img className='icon-row-box' key={i.uuid} src={i.iconUrl} alt={`Crypto icon ${i.uuid}`} title={i.name} onClick={() => handleSelectCrypto(i)} />
+                <h6 className='mx-5 mt-2'>{i.name}</h6>
+            </div>
+
+        ))}
+    </div>  
+      
+       
+    <div className='mt-5 d-flex justify-content-between'>
+        <div>
+            <h4>Your plattform to keep track of crypto data</h4>
+            <p>I hope you might find this useful, or just suimply interesting!</p>
         </div>
         <div className='icon-box'>
             <div>
-            {icons && (showAll ? icons : icons.slice(0, 10)).map((i) => (
+            {icons && (showAll ? icons : icons.slice(0, 20)).map((i) => (
                 <img className='icon' key={i.uuid} src={i.iconUrl} alt={`Crypto icon ${i.uuid}`} title={i.name} onClick={() => handleSelectCrypto(i)} />
             ))}
             </div>
-            <button className='button' onClick={() => setShowAll(!showAll)}>
+            <button className='mt-3 ml-3 button' onClick={() => setShowAll(!showAll)}>
                 {showAll ? 'Show Less' : 'Show All'}
             </button>
         </div>
-
     </div>   
-      
 
     {cryptoUuid && (
-        <div>
+        <div className='crypto-graph-box'>
+            <div className='d-flex'>
+                <h1 className={`current-price ${oldPrice > lastPrice ? "stock-down" : "stock-up"}`}>{oldPrice > lastPrice ? <FontAwesomeIcon icon={faArrowTrendDown} /> : <FontAwesomeIcon icon={faArrowTrendUp} />} ${Math.floor(lastPrice).toString()}</h1>
+                <h1 className={`ml-5 current-price ${dayPercentage < 0 ? "stock-down" : "stock-up"}`}>{timeSpan}: {dayPercentage > 0 ? "+"+dayPercentage : dayPercentage}%</h1>
+            </div>
             <div className='crypto-graph'>
                 <ApexCharts options={chartOptions} series={series} type="line" height={350} />
             </div>
-            <p>
-                Current Price: {Math.floor(lastPrice).toString()} $
-            </p>
         </div>
     )}
     

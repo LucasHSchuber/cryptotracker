@@ -5,15 +5,41 @@ html, body, .wrapper{
 }
 
 .wrapper {
-    padding: 1em 8em 15em 8em;
+    padding: 3em 12em 15em 12em;
 }
+@media screen and (max-width: 881px) {
+    .wrapper{
+        padding: 3em 2em 5em 2em;
+    }
+}
+
+
+.hero-img{
+    height: 10em;
+    width: 100%;
+    object-fit: cover; 
+    object-position: center; 
+}
+
 .crypto-graph-box{
     margin-top: 5em;
+    z-index: 1 !important;
 }
 .crypto-graph{
     padding: 2em;
-    background-color: #f9f9f9;
+    /* background-color: #333333;  */
+    border: 2px solid rgb(128, 128, 128);
     border-radius: 8px;    
+}
+.sparkline-graph{
+    padding: 0.5em;
+}
+.sparkline-graph h1{
+    font-size: 1.2em;
+    font-weight: 700;
+    color: grey;
+    text-align: center;
+
 }
 .current-price{
     font-size: 1.1em;
@@ -32,19 +58,36 @@ html, body, .wrapper{
     box-shadow: 1px 1px 1px 1px rgba(200, 0, 0, 0.5);
 }
 .icon-box{
-    padding: 1em;
+    padding: 1.2em;
+    margin-left: 5em;
     border-radius: 18px;
     max-width: 60%;
-    background-color: rgb(54, 54, 54);
+    background-color:rgb(42, 42, 42);
+}
+.icon{
+    background-color: inherit;
+    border-radius: 10px;
+    padding: 0.5em;
+    margin: 1em 0.5em;
+    transition: 0.2s;
+    width: 55px;
+    height: 55px;
+}
+.icon:hover{
+    background-color: rgb(68, 68, 68);
 }
 
-
+.crypto-box{
+    margin: 3em 0 10em 0;
+}
 .crypto-row-box{
     background-color:rgb(42, 42, 42);
     margin: 0.5em 0;
     padding: 0.75em 2em;
     border-radius: 18px;
     height: fit-content;
+    width: 100%;
+    cursor: default;
     transition: 0.2s;
 }
 .crypto-row-box:hover{
@@ -55,15 +98,12 @@ html, body, .wrapper{
     height: 40px;
 }
 
-.icon{
-    background-color:rgb(58, 58, 58);
-    border-radius: 10px;
-    padding: 0.5em;
-    margin: 1em 0.5em;
-    transition: 0.2s;
-    width: 55px;
-    height: 55px;
-}
-.icon:hover{
-    background-color: rgb(68, 68, 68);
+
+
+@media screen and (max-width: 881px) {
+
+    .icon{
+        width: 40px;
+        height: 40px;
+    }
 }

@@ -1,3 +1,83 @@
+/* components */
+
+
+/* header */
 .header{
-    padding: 2em 0;
+    position: relative; 
+    top: 0;
+    width: 100%;
+    z-index: 100 !important; 
+    background-color: rgb(25, 25, 25);
+    color: white;
+    padding: 3em 10em;
+}
+.header h1{
+    font-size: 1.8em;
+    font-weight: 800;
+}
+.hamburger-menu{
+    position: fixed;
+    display: none;
+    top: 0;
+    left: 0;
+    padding: 10em 0 0 0;
+    background-color: rgb(25, 25, 25);
+    color: white;
+    z-index: 1;
+    overflow: hidden
+}
+
+.hamburger-menu ul li{
+    margin: 1em 5em 0 5em;
+    font-size: 1.6em;
+    font-weight: 600;
+    overflow: hidden;
+    cursor: pointer;
+    transition: 0.2s;
+    width: fit-content;
+}
+.hamburger-menu ul li:hover{
+    color: rgb(206, 206, 206)
+}
+.menu-open{
+    display: block;
+    height: 100vh;
+    overflow: hidden;
+    position: fixed; /* Ensure it's fixed to prevent scrolling */
+    width: 100vw; /* Ensure it spans the full width */
+}
+.header .menu-open{
+    position: sticky;
+}
+.menu-close{
+    display: none;
+}
+
+@media screen and (max-width: 881px) {
+    .header{
+        padding: 2em 5em;
+    }
+}
+
+
+
+
+
+/* footer */
+.footer{
+    background-color: black;
+    padding: 5em 0;
+    text-align: center;
+    height: 30em;
+    color: rgb(215, 215, 215);
+}
+.footer h1{
+    font-size: 1.6em;
+    font-weight: 800;
+}
+
+@media screen and (max-width: 881px) {
+    .footer{
+        height: 20em;
+    }
 }

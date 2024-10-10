@@ -17,22 +17,24 @@ import API from '../../env';
 // import fontawwesome
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowTrendUp, faArrowTrendDown } from '@fortawesome/free-solid-svg-icons';
-// import {  } from '@fortawesome/free-brands-svg-icons';
+import { faThinkPeaks } from '@fortawesome/free-brands-svg-icons';
 
 
 const CryptoTracker = () => {
   const [cryptoData, setCryptoData] = useState([]);
+  const [showAll, setShowAll] = useState(false); // to show all crypto icons in the icons box
   const [oldPrice, setOldPrice] = useState(null); 
   const [lastPrice, setLastPrice] = useState(null);  
   const [icon, setIcon] = useState(null); 
   const [icons, setIcons] = useState(null);
   const [description, setDescription] = useState(null); 
+  const [allTimeHigh, setAllTimeHigh] = useState(null); 
   const [cryptoName, setCryptoName] = useState(null); 
   const [cryptoUuid, setCryptoUuid] = useState("");
 
   const [chartColor, setChartColor] = useState('#000'); 
 
-  const [timeSpan, setTimeSpan] = useState('24h'); 
+  const [timeSpan, setTimeSpan] = useState('3h'); 
   
   //24 hour
   const [dayPercentage, setDayPercentage] = useState(""); 
@@ -42,8 +44,7 @@ const CryptoTracker = () => {
   const [sparklineMonthData, setSparklineMonthData] = useState([]); 
 
   
-
-  const [showAll, setShowAll] = useState(false);
+  
   
   
 
@@ -56,7 +57,7 @@ const CryptoTracker = () => {
   useEffect(() => {
     const fetchInitialIcons = async () => {
       try {
-        const response = await axios.get(API.API_URL_COINS, {
+        const response = await axios.get(`${API.API_URL_COINS}?timePeriod=24h`, {
           headers: {
             'x-access-token': API.API_KEY,
           },
@@ -78,7 +79,7 @@ const CryptoTracker = () => {
 
     const updateIconChanges = async () => {
       try {
-        const response = await axios.get(API.API_URL_COINS, {
+        const response = await axios.get(`${API.API_URL_COINS}?timePeriod=24h`, {
           headers: {
             'x-access-token': API.API_KEY,
           },
@@ -95,17 +96,12 @@ const CryptoTracker = () => {
             change: updatedChanges.find(updated => updated.uuid === icon.uuid)?.change || icon.change,
           }))
         );
-        console.log("Icon changes updated");
       } catch (error) {
         console.error('Error updating icon changes:', error);
       }
     };
-
     fetchInitialIcons(); 
-
-    const interval = setInterval(() => {
-      updateIconChanges(); 
-    }, 5000);
+    const interval = setInterval(() => { updateIconChanges(); }, 15000);
 
     return () => clearInterval(interval);
   }, []); 
@@ -113,7 +109,34 @@ const CryptoTracker = () => {
 
 
 
-  // fetching data for APEXCHART
+// Hook for fetching historical data only when cryptoUuid changes
+useEffect(() => {
+    const fetchHistory = async () => {
+      console.log('cryptoUuid', cryptoUuid);
+      try {
+        const responseHistory = await axios.get(`${API.API_URL_COIN}/${cryptoUuid}/history?timePeriod=${timeSpan}`, {
+          headers: {
+            'x-access-token': API.API_KEY
+          }
+        });
+        console.log('responseHistory', responseHistory.data.data.history);
+        const sparkline = responseHistory.data.data.history;
+        const filteredData = sparkline.filter(p => p.price !== null);
+        const formattedData = filteredData.filter((item, index) => index % 1 === 0).map(item => ({
+          x: new Date(item.timestamp * 1000),
+          y: Math.floor(item.price).toString()
+        }));
+        setCryptoData(formattedData); 
+      } catch (error) {
+        console.error('Error fetching crypto data:', error);
+      }
+    };
+  
+    fetchHistory(); 
+  
+  }, [cryptoUuid, timeSpan]); 
+  
+  // Hook for fetching new data every 5 seconds
   useEffect(() => {
     const fetchData = async () => {
       console.log('cryptoUuid', cryptoUuid);
@@ -125,31 +148,37 @@ const CryptoTracker = () => {
         });
         console.log('response', response);
         const price = parseFloat(response.data.data.coin.price);
-  
+    
         if (lastPrice !== price) {
-          const newPoint = { x: new Date(), y: price };
-          setCryptoData((prevData) => [...prevData, newPoint]);
+          const newPoint = { x: new Date(response.data.data.coin.priceAt * 1000), y: Math.floor(price).toString() };
+        //   setCryptoData((prevData) => [...prevData, newPoint]); 
+          setCryptoData((prevData) => [newPoint, ...prevData]);
           setChartColor(price > lastPrice ? '#00ff00' : '#ff0000');  
           setOldPrice(lastPrice);
           setLastPrice(price); 
           setDescription(response.data.data.coin.description); 
-          setDayPercentage(response.data.data.coin.change);     
+          setDayPercentage(response.data.data.coin.change);  
+          const ath = { timestamp: new Date(response.data.data.coin.allTimeHigh.timestamp * 1000), price: Math.floor(response.data.data.coin.allTimeHigh.price).toString() };
+          setAllTimeHigh(ath);
+          console.log('newPoint', newPoint);   
         } 
       } catch (error) {
         console.error('Error fetching crypto data:', error);
       }
     };
-
-    fetchData(); 
-    const interval = setInterval(fetchData, 5000); 
-
-    return () => clearInterval(interval);
-  }, [cryptoUuid, lastPrice]); 
-
+  
+    fetchData(); // Initial fetch
+    const interval = setInterval(fetchData, 15000); // Set interval for every 5 seconds
+  
+    return () => clearInterval(interval); // Cleanup interval on component unmount or cryptoUuid change
+  
+  }, [cryptoUuid, lastPrice]); // Dependencies: runs when either cryptoUuid or lastPrice changes
+  
 
 
   
   
+
   useEffect(() => {
     const fetchHistoryData = async () => {
       console.log('cryptoUuid', cryptoUuid);
@@ -161,11 +190,13 @@ const CryptoTracker = () => {
         });
         console.log('responseHistory', responseHistory.data.data.history);
         const sparkline = responseHistory.data.data.history;
-        const formattedData = sparkline.filter((item, index) => index % 6 === 0).map(item => ({
+        const _sparkline = sparkline.filter((p) => p.price !== null);
+        const formattedData = _sparkline.filter((item, index) => index % 6 === 0).map(item => ({
             x: new Date(item.timestamp * 1000),
             y: Math.floor(item.price).toString()
         }))
         setSparklineDayData(formattedData); 
+        // setCryptoData(formattedData);
       } catch (error) {
         console.error('Error fetching crypto data:', error);
       }
@@ -184,10 +215,12 @@ const CryptoTracker = () => {
         });
         console.log('responseHistory', responseHistory.data.data.history);
         const sparkline = responseHistory.data.data.history;
-        const formattedData = sparkline.filter((item, index) => index % 3 === 0).map(item => ({
+        const _sparkline = sparkline.filter((p) => p.price !== null);
+        const formattedData = _sparkline.filter((item, index) => index % 3 === 0).map(item => ({
             x: new Date(item.timestamp * 1000),
             y: Math.floor(item.price).toString()
         }))
+        console.log('formattedData', formattedData);
         setSparklineMonthData(formattedData); 
       } catch (error) {
         console.error('Error fetching crypto data:', error);
@@ -215,6 +248,16 @@ const CryptoTracker = () => {
 
 
 
+    // Function to format timestamp
+    const formatTimestamp = (date) => {
+        return date.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour12: false // Change to true if you want 12-hour format
+        });
+    };
+    
 
 
 
@@ -228,6 +271,9 @@ const CryptoTracker = () => {
     console.log('lastPrice', lastPrice);
     console.log('oldPrice', oldPrice);
   }, [lastPrice, oldPrice]);
+  useEffect(() => {
+    console.log('allTimeHigh', allTimeHigh);
+  }, [allTimeHigh]);
 
 
 
@@ -327,7 +373,7 @@ const CryptoTracker = () => {
 
   const series = [{
     name: 'Bitcoin Price',
-    data: cryptoData
+    data: cryptoData,
   }];
 
 
@@ -483,8 +529,8 @@ const CryptoTracker = () => {
                     onClick={() => handleSelectCrypto(i)}
                 >
                     <img className='icon-row-box' key={i.uuid} src={i.iconUrl} alt={`Crypto icon ${i.uuid}`} title={i.name} onClick={() => handleSelectCrypto(i)} />
-                    <h6 className='mx-5 mt-2'>{i.name}</h6>
-                    <h6 className={`mx-5 mt-2`}> <span  style={{ color: i.change > 0 ? "#00c200" : "#ff1a1a" }}> {i.change} </span></h6>
+                    <h6 className='mx-5 mt-2' title='Crypto Name'>{i.name}</h6>
+                    <h6 className={`mx-5 mt-2`} title='24 Hour Change'> <span  style={{ color: i.change > 0 ? "#00c200" : "#ff1a1a" }}> {i.change}% </span></h6>
                 </div>
 
             ))}
@@ -515,23 +561,35 @@ const CryptoTracker = () => {
                         <h2 className='mr-5 mt-2'>{cryptoName}</h2>
                         <h1 title='Current Price' className={`current-price ${oldPrice > lastPrice ? "stock-down" : "stock-up"}`}>{oldPrice > lastPrice ? <FontAwesomeIcon icon={faArrowTrendDown} /> : <FontAwesomeIcon icon={faArrowTrendUp} />} ${Math.floor(lastPrice).toString()}</h1>
                         <h1 title='24 Hour Change' className={`ml-5 current-price ${dayPercentage < 0 ? "stock-down" : "stock-up"}`}> {dayPercentage > 0 ? "+"+dayPercentage : dayPercentage}%</h1>
+                        <h1 title='All Time High' className={`ml-5 current-price stock-default`}><FontAwesomeIcon icon={faThinkPeaks} /> ${allTimeHigh && allTimeHigh.price} <span style={{ fontSize: "0.7em", fontWeight: "400" }}>{allTimeHigh && formatTimestamp(allTimeHigh.timestamp)}</span> </h1>
                     </div>
                     <div>
                         <p className='my-3'>{description}</p>
                     </div>
                     <div className='mt-3 crypto-graph'>
                         <ApexCharts options={chartOptions} series={series} type="line" height={350} />
+                        <div className='mt-3 timespan-buttons d-flex justify-content-center'>
+                            <button onClick={() => setTimeSpan("1h")} style={{ backgroundColor: timeSpan === "1h" ? "#fff" : "" }}>1h</button>
+                            <button onClick={() => setTimeSpan("3h")} style={{ backgroundColor: timeSpan === "3h" ? "#fff" : "" }}>3h</button>
+                            <button onClick={() => setTimeSpan("12h")} style={{ backgroundColor: timeSpan === "12h" ? "#fff" : "" }}>12h</button>
+                            <button onClick={() => setTimeSpan("24h")} style={{ backgroundColor: timeSpan === "24h" ? "#fff" : "" }}>1d</button>
+                            <button onClick={() => setTimeSpan("7d")} style={{ backgroundColor: timeSpan === "7d" ? "#fff" : "" }}>7d</button>
+                            <button onClick={() => setTimeSpan("30d")} style={{ backgroundColor: timeSpan === "30d" ? "#fff" : "" }}>30d</button>
+                            <button onClick={() => setTimeSpan("1y")} style={{ backgroundColor: timeSpan === "1y" ? "#fff" : "" }}>1y</button>
+                            <button onClick={() => setTimeSpan("3y")} style={{ backgroundColor: timeSpan === "3y" ? "#fff" : "" }}>3y</button>
+                            <button onClick={() => setTimeSpan("5y")} style={{ backgroundColor: timeSpan === "5y" ? "#fff" : "" }}>5y</button>
+                        </div>
                     </div>
                 </div>
 
                 <div className='mt-5 sparkline-graph d-flex justify-content-around'>
                     <div>
                         <h1>24h:</h1>
-                        <Chart options={barOptions} series={series2} type="bar" height={250} width={400} />
+                        <Chart options={barOptions} series={series2} type="bar" height={180} width={400} />
                     </div>
                     <div>
                         <h1>7d:</h1>
-                        <Chart2 options={barOptions2} series={series3} type="bar" height={250} width={400} />
+                        <Chart2 options={barOptions2} series={series3} type="bar" height={180} width={400} />
                     </div>
                 </div>
             </div>

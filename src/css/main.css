@@ -7,7 +7,7 @@ html, body, .wrapper{
 .wrapper {
     padding: 3em 12em 15em 12em;
 }
-@media screen and (max-width: 881px) {
+@media screen and (max-width: 1080px) {
     .wrapper{
         padding: 3em 2em 5em 2em;
     }
@@ -31,9 +31,7 @@ html, body, .wrapper{
     border: 2px solid rgb(128, 128, 128);
     border-radius: 8px;    
 }
-.sparkline-graph{
-    padding: 0.5em;
-}
+
 .sparkline-graph h1{
     font-size: 1.2em;
     font-weight: 700;
@@ -56,6 +54,11 @@ html, body, .wrapper{
     border: 1px solid #ff1a1a;
     color: #ff1a1a;
     box-shadow: 1px 1px 1px 1px rgba(200, 0, 0, 0.5);
+}
+.stock-default{
+    border: 1px solid #b6b6b6;
+    color: #b6b6b6;
+    box-shadow: 1px 1px 1px 1px rgba(115, 115, 115, 0.5);
 }
 .icon-box{
     padding: 1.2em;

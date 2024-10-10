@@ -8,8 +8,22 @@
     padding: 0.5em 1em;
 }
 .button:hover{
-
     border-radius: 5px;
     background-color: rgb(92, 92, 92);
-    
+}
+
+
+.timespan-buttons button{
+    margin: 0 0.1em;
+    padding: 0.2em 0.65em;
+    border: none;
+    border-radius: 3px;
+    background-color: rgb(232, 232, 232);
+    color: black;
+    font-weight: 500;
+    transition: 0.2s;
+    outline: none;
+}
+.timespan-buttons button:hover{
+    background-color: rgb(183, 183, 183);
 }

@@ -26,19 +26,63 @@ html, body, .wrapper{
     z-index: 1 !important;
 }
 .crypto-graph{
-    padding: 2em;
+    padding: 1em 2em 1.5em 2em;
     /* background-color: #333333;  */
     border: 2px solid rgb(128, 128, 128);
     border-radius: 8px;    
 }
 
-.sparkline-graph h1{
+
+.stats-box{
+
+}
+.stats{
+    border-bottom: 1px solid rgb(137, 137, 137);
+    padding: 0 0.5em 0 0;
+    margin: 0.5em 0;
+}
+.stats-box h1{
+    color: rgb(169, 169, 169);
+    font-weight: 600;
+    font-size: 0.9em;
+    letter-spacing: 1px;
+}
+.stats-box h2{
+    font-weight: 400;
+    font-size: 0.9em;
+}
+.stats-box h1 span{
+    font-size: 1em !important;
+    font-weight: 600;
+}
+.links-box h1{
+    font-size: 1.4em;
+    font-weight: 600;
+
+}
+.links-box a{
+    font-size: 1em;
+    font-weight: 400;
+
+}
+
+.sparkline-graph-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.sparkline-graph-box h1{
     font-size: 1.2em;
     font-weight: 700;
     color: grey;
     text-align: center;
-
 }
+
+.sparkline-graph{
+    margin: 0;
+    width: 100%;
+}
+
 .current-price{
     font-size: 1.1em;
     width: fit-content;
@@ -103,10 +147,33 @@ html, body, .wrapper{
 
 
 
-@media screen and (max-width: 881px) {
 
+@media screen and (min-width: 1900px) {
+    .sparkline-graph{
+        margin: 0 5em !important;
+    }
+}
+
+@media screen and (max-width: 1220px) {
+    .sparkline-graph-box {
+        display:inline-block;
+        width: 100%;
+    }
+}
+
+@media screen and (max-width: 881px) {
+    .crypto-box{
+        margin: 2em 0 5em 0;
+    }
+    .icon-box{
+        padding: 0.8em;
+        margin-left: 0.75em;
+        max-width: 60%;
+    }
     .icon{
         width: 40px;
         height: 40px;
+        padding: 0.2em;
+        margin: 0.4em;
     }
 }

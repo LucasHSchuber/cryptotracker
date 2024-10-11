@@ -7,7 +7,8 @@ import { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars, faTimes } from '@fortawesome/free-solid-svg-icons';;
 
-
+// import images
+import c from "../images/c.png";
 
 const Header: React.FC = () => {
     //define states
@@ -29,7 +30,10 @@ const Header: React.FC = () => {
             </div>
 
             <div className='header d-flex justify-content-between'>
-                <h1>Crypter</h1>
+                <div className='d-flex'>
+                    <img src={c} alt='Crypter Logo' style={{ width: "37px", height: "31px", marginRight: "-0.2em",  }}></img>
+                    <h1>rypter</h1>
+                </div>
                 <div onClick={() => setMenuOpen(!menuOpen)}>
                     <FontAwesomeIcon icon={menuOpen ? faTimes : faBars} size='2x' />
                 </div>

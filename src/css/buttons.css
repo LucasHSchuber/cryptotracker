@@ -15,15 +15,16 @@
 
 .timespan-buttons button{
     margin: 0 0.1em;
-    padding: 0.2em 0.65em;
-    border: none;
+    padding: 0.4em 0.65em;
+    border: 1px solid #7f7f7f;
     border-radius: 3px;
-    background-color: rgb(232, 232, 232);
-    color: black;
+    background-color: inherit;
+    width: 100%;
+    color: rgb(244, 244, 244);
     font-weight: 500;
     transition: 0.2s;
     outline: none;
 }
 .timespan-buttons button:hover{
-    background-color: rgb(183, 183, 183);
+    background-color: #383838;
 }

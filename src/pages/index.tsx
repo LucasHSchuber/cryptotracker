@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ApexCharts from 'react-apexcharts';
 import Chart from 'react-apexcharts';
-import Chart2 from 'react-apexcharts';
 import axios from 'axios'; 
 
 // import images
@@ -26,6 +25,8 @@ const CryptoTracker = () => {
   const [oldPrice, setOldPrice] = useState(null); 
   const [lastPrice, setLastPrice] = useState(null);  
   const [icon, setIcon] = useState(null); 
+  const [links, setLinks] = useState([]); 
+  const [stats, setStats] = useState({}); 
   const [icons, setIcons] = useState(null);
   const [description, setDescription] = useState(null); 
   const [allTimeHigh, setAllTimeHigh] = useState(null); 
@@ -41,12 +42,41 @@ const CryptoTracker = () => {
 
   //Sparkline data
   const [sparklineDayData, setSparklineDayData] = useState([]); 
+  const [sparklineWeekhData, setSparklineWeekhData] = useState([]); 
   const [sparklineMonthData, setSparklineMonthData] = useState([]); 
 
+  const [isUserActive, setIsUserActive] = useState(true);
+
+
   
-  
-  
-  
+  // check user inactivity
+  useEffect(() => {
+    let idleTime = 0;
+
+    // Function to reset idle time
+    const resetIdleTime = () => {
+      setIsUserActive(true);
+      idleTime = 0;
+    };
+
+    // Set up event listeners for user activity
+    const events = ['mousemove', 'keydown', 'mousedown', 'scroll'];
+    events.forEach(event => document.addEventListener(event, resetIdleTime));
+
+    // Check for idle state every seconds
+    const interval = setInterval(() => {
+      idleTime++;
+      if (idleTime > 3) { 
+        setIsUserActive(false);
+      }
+    }, 1000); 
+
+    return () => {
+      events.forEach(event => document.removeEventListener(event, resetIdleTime));
+      clearInterval(interval);
+    };
+  }, []);
+
 
 
 
@@ -69,6 +99,7 @@ const CryptoTracker = () => {
           iconUrl: coin.iconUrl,
           name: coin.name,
           change: coin.change,
+          price: coin.price,
         }));
         setIcons(initialIcons);
         console.log("Icons initialized");
@@ -78,6 +109,7 @@ const CryptoTracker = () => {
     };
 
     const updateIconChanges = async () => {
+      if (isUserActive) {  
       try {
         const response = await axios.get(`${API.API_URL_COINS}?timePeriod=24h`, {
           headers: {
@@ -87,6 +119,7 @@ const CryptoTracker = () => {
         const updatedChanges = response.data.data.coins.map(coin => ({
           uuid: coin.uuid,
           change: coin.change,
+          price: coin.price,
         }));
         
         // Update only the change field for existing icons
@@ -94,17 +127,26 @@ const CryptoTracker = () => {
           prevIcons.map(icon => ({
             ...icon,
             change: updatedChanges.find(updated => updated.uuid === icon.uuid)?.change || icon.change,
+            price: updatedChanges.find(updated => updated.uuid === icon.uuid)?.price || icon.price,
           }))
         );
       } catch (error) {
         console.error('Error updating icon changes:', error);
       }
+    } else {
+        console.log("User not active - updateIconChanges inactive ")
+    }
     };
     fetchInitialIcons(); 
-    const interval = setInterval(() => { updateIconChanges(); }, 15000);
-
+    
+    const interval = setInterval(() => { 
+        if (isUserActive) {
+            updateIconChanges();
+        } 
+    }, 15000);
     return () => clearInterval(interval);
-  }, []); 
+
+  }, [isUserActive]); 
 
 
 
@@ -140,6 +182,7 @@ useEffect(() => {
   useEffect(() => {
     const fetchData = async () => {
       console.log('cryptoUuid', cryptoUuid);
+      if (isUserActive) {
       try {
         const response = await axios.get(`${API.API_URL_COIN}/${cryptoUuid}`, {
           headers: {
@@ -156,6 +199,18 @@ useEffect(() => {
           setChartColor(price > lastPrice ? '#00ff00' : '#ff0000');  
           setOldPrice(lastPrice);
           setLastPrice(price); 
+          setIcon(response.data.data.coin.iconUrl); 
+          setLinks(response.data.data.coin.links); 
+          setStats({
+            price: response.data.data.coin.price,
+            dayvolume: response.data.data.coin['24hVolume'],
+            marketcap: response.data.data.coin.marketCap,
+            numberOfExchanges: response.data.data.coin.numberOfExchanges,
+            numberOfMarkets: response.data.data.coin.numberOfMarkets,
+            supplytotal: response.data.data.coin.supply.total,
+            supplycirculating: response.data.data.coin.supply.circulating,
+            supplymax: response.data.data.coin.supply.max,
+          }); 
           setDescription(response.data.data.coin.description); 
           setDayPercentage(response.data.data.coin.change);  
           const ath = { timestamp: new Date(response.data.data.coin.allTimeHigh.timestamp * 1000), price: Math.floor(response.data.data.coin.allTimeHigh.price).toString() };
@@ -165,14 +220,21 @@ useEffect(() => {
       } catch (error) {
         console.error('Error fetching crypto data:', error);
       }
+    } else {
+        console.log("User not active - updateIconChanges inactive ")
+    }
     };
   
-    fetchData(); // Initial fetch
-    const interval = setInterval(fetchData, 15000); // Set interval for every 5 seconds
+    fetchData(); 
+
+    const interval = setInterval(() => { 
+        if (isUserActive) {
+            fetchData();
+        } 
+    }, 15000);
+    return () => clearInterval(interval);
   
-    return () => clearInterval(interval); // Cleanup interval on component unmount or cryptoUuid change
-  
-  }, [cryptoUuid, lastPrice]); // Dependencies: runs when either cryptoUuid or lastPrice changes
+  }, [cryptoUuid, lastPrice, isUserActive]); 
   
 
 
@@ -221,6 +283,31 @@ useEffect(() => {
             y: Math.floor(item.price).toString()
         }))
         console.log('formattedData', formattedData);
+        setSparklineWeekhData(formattedData); 
+      } catch (error) {
+        console.error('Error fetching crypto data:', error);
+      }
+    };
+    fetchHistoryData(); 
+  }, [cryptoUuid]); 
+
+  useEffect(() => {
+    const fetchHistoryData = async () => {
+      console.log('cryptoUuid', cryptoUuid);
+      try {
+        const responseHistory = await axios.get(`${API.API_URL_COIN}/${cryptoUuid}/history?timePeriod=30d`, {
+          headers: {
+            'x-access-token': API.API_KEY
+          }
+        });
+        console.log('responseHistory', responseHistory.data.data.history);
+        const sparkline = responseHistory.data.data.history;
+        const _sparkline = sparkline.filter((p) => p.price !== null);
+        const formattedData = _sparkline.filter((item, index) => index % 10 === 0).map(item => ({
+            x: new Date(item.timestamp * 1000),
+            y: Math.floor(item.price).toString()
+        }))
+        console.log('formattedData', formattedData);
         setSparklineMonthData(formattedData); 
       } catch (error) {
         console.error('Error fetching crypto data:', error);
@@ -254,7 +341,7 @@ useEffect(() => {
             year: 'numeric',
             month: 'long',
             day: 'numeric',
-            hour12: false // Change to true if you want 12-hour format
+            hour12: false 
         });
     };
     
@@ -274,6 +361,12 @@ useEffect(() => {
   useEffect(() => {
     console.log('allTimeHigh', allTimeHigh);
   }, [allTimeHigh]);
+  useEffect(() => {
+    console.log('isUserActive', isUserActive);
+  }, [isUserActive]);
+  useEffect(() => {
+    console.log('stats', stats);
+  }, [stats]);
 
 
 
@@ -390,6 +483,9 @@ useEffect(() => {
         show: false,
       },
     },
+    dataLabels: {
+        enabled: false // This will hide the numbers at the bottom of the bars
+      },
     xaxis: {
       type: 'datetime',
       labels: {
@@ -457,6 +553,78 @@ useEffect(() => {
         show: false,
       },
     },
+    dataLabels: {
+        enabled: false // This will hide the numbers at the bottom of the bars
+      },
+    xaxis: {
+      type: 'datetime',
+      labels: {
+        // format: 'dd MMM',
+        style: {
+            colors: '#ffffff',
+        },
+      },
+    },
+    yaxis: {
+      title: {
+        text: 'Price (USD)',
+      },
+      labels: {
+        style: {
+          colors: '#ffffff', 
+        }
+      },
+      min: Math.min(...sparklineWeekhData.map(item => item.y)) - 100, 
+      max: Math.max(...sparklineWeekhData.map(item => item.y)) + 100, 
+    },
+    colors: ['#00aeff'], 
+    grid: {
+      borderColor: '#e7e7e7', 
+    },
+    tooltip: {
+        theme: 'dark', 
+        style: {
+          fontSize: '12px',
+          fontFamily: 'Arial, sans-serif',
+        },
+        y: {
+          formatter: function (value) {
+            return "$" + Math.floor(value).toString(); 
+          },
+        },
+        marker: {
+          show: true,
+        },
+        background: '#000000', 
+        borderColor: '#ffffff',
+        borderWidth: 1,
+        x: {
+          show: true,
+          format: 'dd MMM HH:mm',
+        },
+      },
+  };
+  const series3 = [{
+    name: 'Price',
+    data: sparklineWeekhData, 
+  }];
+
+
+  
+  // ApexCharts configuration options
+  const barOptions3 = {
+    chart: {
+      type: 'bar', 
+      zoom: {
+        enabled: false,
+      },
+      toolbar: {
+        show: false,
+      },
+    },
+    dataLabels: {
+        enabled: false // This will hide the numbers at the bottom of the bars
+      },
     xaxis: {
       type: 'datetime',
       labels: {
@@ -505,7 +673,7 @@ useEffect(() => {
         },
       },
   };
-  const series3 = [{
+  const series4 = [{
     name: 'Price',
     data: sparklineMonthData, 
   }];
@@ -530,17 +698,17 @@ useEffect(() => {
                 >
                     <img className='icon-row-box' key={i.uuid} src={i.iconUrl} alt={`Crypto icon ${i.uuid}`} title={i.name} onClick={() => handleSelectCrypto(i)} />
                     <h6 className='mx-5 mt-2' title='Crypto Name'>{i.name}</h6>
+                    <h6 className={`mx-5 mt-2`} title='Current Price'> <span > ${Math.floor(i.price).toString()} </span></h6>
                     <h6 className={`mx-5 mt-2`} title='24 Hour Change'> <span  style={{ color: i.change > 0 ? "#00c200" : "#ff1a1a" }}> {i.change}% </span></h6>
                 </div>
 
             ))}
         </div>  
         
-        
         <div className='d-flex justify-content-between'>
             <div>
-                <h2 className='mb-3'>Crypter is a plattform where you can keep track of crypto data</h2>
-                <p>I hope you might find this useful, or just suimply interesting. I hope you might find this useful, or just suimply interesting! I hope you might find this useful, or just suimply interesting!</p>
+                <h2 className='mb-3'>With Crypter you can keep track of all your favorite crypto currencies!</h2>
+                <p>Select a crypto currency and view data in graphs, see metric data, and keep yourself updated with provided links </p>
             </div>
             <div className='icon-box'>
                 <div>
@@ -558,38 +726,78 @@ useEffect(() => {
             <div>
                 <div className='crypto-graph-box'>
                     <div className='d-flex'>
+                        <img className='mt-2 mr-3 icon-row-box' src={icon} alt={cryptoName} title={cryptoName + "Logo"}  />
                         <h2 className='mr-5 mt-2'>{cryptoName}</h2>
                         <h1 title='Current Price' className={`current-price ${oldPrice > lastPrice ? "stock-down" : "stock-up"}`}>{oldPrice > lastPrice ? <FontAwesomeIcon icon={faArrowTrendDown} /> : <FontAwesomeIcon icon={faArrowTrendUp} />} ${Math.floor(lastPrice).toString()}</h1>
                         <h1 title='24 Hour Change' className={`ml-5 current-price ${dayPercentage < 0 ? "stock-down" : "stock-up"}`}> {dayPercentage > 0 ? "+"+dayPercentage : dayPercentage}%</h1>
                         <h1 title='All Time High' className={`ml-5 current-price stock-default`}><FontAwesomeIcon icon={faThinkPeaks} /> ${allTimeHigh && allTimeHigh.price} <span style={{ fontSize: "0.7em", fontWeight: "400" }}>{allTimeHigh && formatTimestamp(allTimeHigh.timestamp)}</span> </h1>
+                        {/* <button onClick={() => setShowLinks(!showLinks)}>{cryptoName} Link</button> */}
                     </div>
                     <div>
                         <p className='my-3'>{description}</p>
                     </div>
                     <div className='mt-3 crypto-graph'>
-                        <ApexCharts options={chartOptions} series={series} type="line" height={350} />
-                        <div className='mt-3 timespan-buttons d-flex justify-content-center'>
-                            <button onClick={() => setTimeSpan("1h")} style={{ backgroundColor: timeSpan === "1h" ? "#fff" : "" }}>1h</button>
-                            <button onClick={() => setTimeSpan("3h")} style={{ backgroundColor: timeSpan === "3h" ? "#fff" : "" }}>3h</button>
-                            <button onClick={() => setTimeSpan("12h")} style={{ backgroundColor: timeSpan === "12h" ? "#fff" : "" }}>12h</button>
-                            <button onClick={() => setTimeSpan("24h")} style={{ backgroundColor: timeSpan === "24h" ? "#fff" : "" }}>1d</button>
-                            <button onClick={() => setTimeSpan("7d")} style={{ backgroundColor: timeSpan === "7d" ? "#fff" : "" }}>7d</button>
-                            <button onClick={() => setTimeSpan("30d")} style={{ backgroundColor: timeSpan === "30d" ? "#fff" : "" }}>30d</button>
-                            <button onClick={() => setTimeSpan("1y")} style={{ backgroundColor: timeSpan === "1y" ? "#fff" : "" }}>1y</button>
-                            <button onClick={() => setTimeSpan("3y")} style={{ backgroundColor: timeSpan === "3y" ? "#fff" : "" }}>3y</button>
-                            <button onClick={() => setTimeSpan("5y")} style={{ backgroundColor: timeSpan === "5y" ? "#fff" : "" }}>5y</button>
+                        <ApexCharts options={chartOptions} series={series} type="line" height={320} />
+                        <div className='mt-3 timespan-buttons d-flex justify-content-around'>
+                            <button onClick={() => setTimeSpan("1h")} style={{ backgroundColor: timeSpan === "1h" ? "#383838" : "" }}>1h</button>
+                            <button onClick={() => setTimeSpan("3h")} style={{ backgroundColor: timeSpan === "3h" ? "#383838" : "" }}>3h</button>
+                            <button onClick={() => setTimeSpan("12h")} style={{ backgroundColor: timeSpan === "12h" ? "#383838" : "" }}>12h</button>
+                            <button onClick={() => setTimeSpan("24h")} style={{ backgroundColor: timeSpan === "24h" ? "#383838" : "" }}>1d</button>
+                            <button onClick={() => setTimeSpan("7d")} style={{ backgroundColor: timeSpan === "7d" ? "#383838" : "" }}>7d</button>
+                            <button onClick={() => setTimeSpan("30d")} style={{ backgroundColor: timeSpan === "30d" ? "#383838" : "" }}>30d</button>
+                            <button onClick={() => setTimeSpan("1y")} style={{ backgroundColor: timeSpan === "1y" ? "#383838" : "" }}>1y</button>
+                            <button onClick={() => setTimeSpan("3y")} style={{ backgroundColor: timeSpan === "3y" ? "#383838" : "" }}>3y</button>
+                            <button onClick={() => setTimeSpan("5y")} style={{ backgroundColor: timeSpan === "5y" ? "#383838" : "" }}>5y</button>
                         </div>
                     </div>
                 </div>
 
-                <div className='mt-5 sparkline-graph d-flex justify-content-around'>
-                    <div>
-                        <h1>24h:</h1>
-                        <Chart options={barOptions} series={series2} type="bar" height={180} width={400} />
+                <div className='mt-4 sparkline-graph-box '>
+                    <div className='sparkline-graph'>
+                        <h1>1d:</h1>
+                        <Chart options={barOptions} series={series2} type="bar" height={180} />
                     </div>
-                    <div>
+                    <div className='sparkline-graph'>
                         <h1>7d:</h1>
-                        <Chart2 options={barOptions2} series={series3} type="bar" height={180} width={400} />
+                        <Chart options={barOptions2} series={series3} type="bar" height={180} />
+                    </div>
+                    <div className='sparkline-graph'>
+                        <h1>30d:</h1>
+                        <Chart options={barOptions3} series={series4} type="bar" height={180} />
+                    </div>
+                </div>
+
+                <div className='mt-5 d-flex justify-content-around'>
+                    <div className='stats-box'>
+                    <h1 className='mb-4' style={{ fontSize: "1.4em", color: "white" }}>Financial Metrics for {cryptoName}</h1>
+                        <div className='stats d-flex'>
+                            <h1 className='mr-2'>Current Price:</h1>
+                            <h2>${stats.price}</h2>
+                        </div>
+                        <div className='stats d-flex'>
+                            <h1 className='mr-2'>Current  Market Cap:</h1>
+                            <h2>${stats.marketcap}</h2>
+                        </div>
+                        <div className='stats d-flex'>
+                            <h1 className='mr-2'>Current  Supply Circulating:</h1>
+                            <h2>{stats.supplycirculating}</h2>
+                        </div>
+                        <div className='stats d-flex'>
+                            <h1 className='mr-2'>Current Supply Total:</h1>
+                            <h2>{stats.supplytotal}</h2>
+                        </div>
+                        <div className='stats d-flex'>
+                            <h1 className='mr-2'>{cryptoName} Supply Max:</h1>
+                            <h2>{stats.supplymax}</h2>
+                        </div>
+                    </div>
+                    <div className='links-box'>
+                        <h1 className='mb-3'>Read more about {cryptoName}</h1>
+                        {links.map((item) => (
+                            <div>
+                                <a href={item.url} target='_blank' >{item.name}</a>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>

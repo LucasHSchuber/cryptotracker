@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import ApexCharts from 'react-apexcharts';
 import Chart from 'react-apexcharts';
 import axios from 'axios'; 
@@ -59,8 +59,8 @@ interface Stats {
 const CryptoTracker = () => {
   const [cryptoData, setCryptoData] = useState<CryptoPoint[]>([]);
   const [showAll, setShowAll] = useState(false); // to show all crypto icons in the icons box
-  const [oldPrice, setOldPrice] = useState(null); 
-  const [lastPrice, setLastPrice] = useState<number | null>(null);
+  const [oldPrice, setOldPrice] = useState<number | null>(null);
+  const [lastPrice, setLastPrice] = useState<number>(0);
   const [icon, setIcon] = useState<string | null>(null);
   const [links, setLinks] = useState([]); 
   const [stats, setStats] = useState<Stats | null>(null); 
@@ -70,7 +70,7 @@ const CryptoTracker = () => {
   const [cryptoName, setCryptoName] = useState<string | null>(null);
   const [cryptoUuid, setCryptoUuid] = useState("");
 
-  const [chartColor, setChartColor] = useState('#000'); 
+  const [chartColor, setChartColor] = useState<string>('#ff0000'); // Default color
 
   const [timeSpan, setTimeSpan] = useState('3h'); 
   
@@ -363,7 +363,7 @@ useEffect(() => {
     console.log('uuid', crypto.uuid);
     setCryptoUuid(crypto.uuid);
     setCryptoData([]);
-    setLastPrice(null);
+    setLastPrice(0);
     setIcon(crypto.iconUrl);
     setCryptoName(crypto.name);
   };
@@ -423,9 +423,9 @@ useEffect(() => {
       },
       background: 'transparent',
       events: {
-        mouseLeave: function () {
-            this.zoomed = false; 
-        },
+        // mouseLeave: function () {
+        //     this.zoomed = false; 
+        // },
       },
       toolbar: {
         show: false,
@@ -484,7 +484,7 @@ useEffect(() => {
           fontFamily: 'Arial, sans-serif',
         },
         y: {
-          formatter: function (value) {
+          formatter: function (value: number) {
             return "$" + Math.floor(value).toString(); 
           },
         },
@@ -555,7 +555,7 @@ useEffect(() => {
           fontFamily: 'Arial, sans-serif',
         },
         y: {
-          formatter: function (value) {
+          formatter: function (value: number) {
             return "$" + Math.floor(value).toString(); 
           },
         },
@@ -625,7 +625,7 @@ useEffect(() => {
           fontFamily: 'Arial, sans-serif',
         },
         y: {
-          formatter: function (value) {
+          formatter: function (value: number) {
             return "$" + Math.floor(value).toString(); 
           },
         },
@@ -694,7 +694,7 @@ useEffect(() => {
           fontFamily: 'Arial, sans-serif',
         },
         y: {
-          formatter: function (value) {
+          formatter: function (value: number) {
             return "$" + Math.floor(value).toString(); 
           },
         },
@@ -766,9 +766,9 @@ useEffect(() => {
                         {icon && (
                         <img className='mt-2 mr-3 icon-row-box' src={icon} alt={cryptoName ? cryptoName : "Logo"} title={cryptoName + "Logo"}  />
                         )}
-                        <h2 className='mr-5 mt-2'>{cryptoName}</h2>
-                        <h1 title='Current Price' className={`current-price ${oldPrice > lastPrice ? "stock-down" : "stock-up"}`}>{oldPrice > lastPrice ? <FontAwesomeIcon icon={faArrowTrendDown} /> : <FontAwesomeIcon icon={faArrowTrendUp} />} ${Math.floor(lastPrice).toString()}</h1>
-                        <h1 title='24 Hour Change' className={`ml-5 current-price ${dayPercentage < 0 ? "stock-down" : "stock-up"}`}> {dayPercentage > 0 ? "+"+dayPercentage : dayPercentage}%</h1>
+                        <h2 className='mr-5 mt-2' style={{ width: "fit-content"}}>{cryptoName}</h2>
+                        <h1 title='Current Price' className={`current-price ${oldPrice > lastPrice ? "stock-down" : "stock-up"}`}>{oldPrice > lastPrice ? <FontAwesomeIcon icon={faArrowTrendDown} /> : <FontAwesomeIcon icon={faArrowTrendUp} />} ${ lastPrice > 0 ? Math.floor(lastPrice).toString(): ""}</h1>
+                        <h1 title='24 Hour Change' className={`ml-5 current-price ${parseFloat(dayPercentage) < 0 ? "stock-down" : "stock-up"}`}> {parseFloat(dayPercentage) > 0 ? "+"+dayPercentage : dayPercentage}%</h1>
                         <h1 title='All Time High' className={`ml-5 current-price stock-default`}><FontAwesomeIcon icon={faThinkPeaks} /> ${allTimeHigh && allTimeHigh.price} <span style={{ fontSize: "0.7em", fontWeight: "400" }}>{allTimeHigh && formatTimestamp(allTimeHigh.timestamp)}</span> </h1>
                         {/* <button onClick={() => setShowLinks(!showLinks)}>{cryptoName} Link</button> */}
                     </div>

@@ -1,7 +1,7 @@
 // header.tsx
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+// import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 
 // import fontawwesome
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -12,10 +12,10 @@ import c from "../images/c.png";
 
 const Header: React.FC = () => {
     //define states
-    const [link, setLink] = useState("");
+    // const [link, setLink] = useState("");
     const [menuOpen, setMenuOpen] = useState(false); 
 
-    const navigate = useNavigate(); 
+    // const navigate = useNavigate(); 
 
     
 

@@ -18,19 +18,56 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowTrendUp, faArrowTrendDown } from '@fortawesome/free-solid-svg-icons';
 import { faThinkPeaks } from '@fortawesome/free-brands-svg-icons';
 
+interface Coin {
+    uuid: string;
+    timestamp: number;
+    iconUrl: string;
+    name: string;
+    change: number;
+    price: number;
+  }
+
+  interface CryptoPoint {
+    x: Date;
+    y: string;
+  }
+
+  interface AllTimeHigh {
+    timestamp: Date;
+    price: string;
+}
+interface SparklineData {
+    x: Date; // or another type depending on your use case
+    y: number;
+}
+interface Stats {
+    price: number;
+    dayVolume: number;
+    marketCap: number;
+    numberOfExchanges: number;
+    numberOfMarkets: number;
+    supplyTotal: number;
+    supplyCirculating: number;
+    supplyMax: number;
+  }
+  interface Link {
+    url: string;
+    name: string;
+}
+
 
 const CryptoTracker = () => {
-  const [cryptoData, setCryptoData] = useState([]);
+  const [cryptoData, setCryptoData] = useState<CryptoPoint[]>([]);
   const [showAll, setShowAll] = useState(false); // to show all crypto icons in the icons box
   const [oldPrice, setOldPrice] = useState(null); 
-  const [lastPrice, setLastPrice] = useState(null);  
-  const [icon, setIcon] = useState(null); 
+  const [lastPrice, setLastPrice] = useState<number | null>(null);
+  const [icon, setIcon] = useState<string | null>(null);
   const [links, setLinks] = useState([]); 
-  const [stats, setStats] = useState({}); 
-  const [icons, setIcons] = useState(null);
+  const [stats, setStats] = useState<Stats | null>(null); 
+  const [icons, setIcons] = useState<Coin[]>([]);
   const [description, setDescription] = useState(null); 
-  const [allTimeHigh, setAllTimeHigh] = useState(null); 
-  const [cryptoName, setCryptoName] = useState(null); 
+  const [allTimeHigh, setAllTimeHigh] = useState<AllTimeHigh | null>(null); 
+  const [cryptoName, setCryptoName] = useState<string | null>(null);
   const [cryptoUuid, setCryptoUuid] = useState("");
 
   const [chartColor, setChartColor] = useState('#000'); 
@@ -41,9 +78,9 @@ const CryptoTracker = () => {
   const [dayPercentage, setDayPercentage] = useState(""); 
 
   //Sparkline data
-  const [sparklineDayData, setSparklineDayData] = useState([]); 
-  const [sparklineWeekhData, setSparklineWeekhData] = useState([]); 
-  const [sparklineMonthData, setSparklineMonthData] = useState([]); 
+  const [sparklineDayData, setSparklineDayData] = useState<SparklineData[]>([]);
+  const [sparklineWeekhData, setSparklineWeekhData] = useState<SparklineData[]>([]); 
+  const [sparklineMonthData, setSparklineMonthData] = useState<SparklineData[]>([]); 
 
   const [isUserActive, setIsUserActive] = useState(true);
 
@@ -94,8 +131,8 @@ const CryptoTracker = () => {
         });
         console.log('response', response);
         // Set initial icons
-        const initialIcons = response.data.data.coins.map(coin => ({
-          uuid: coin.uuid,
+    const initialIcons: Coin[] = response.data.data.coins.map((coin: Coin) => ({
+         uuid: coin.uuid,
           iconUrl: coin.iconUrl,
           name: coin.name,
           change: coin.change,
@@ -116,7 +153,7 @@ const CryptoTracker = () => {
             'x-access-token': API.API_KEY,
           },
         });
-        const updatedChanges = response.data.data.coins.map(coin => ({
+        const updatedChanges = response.data.data.coins.map((coin: Coin) => ({
           uuid: coin.uuid,
           change: coin.change,
           price: coin.price,
@@ -126,8 +163,8 @@ const CryptoTracker = () => {
         setIcons(prevIcons =>
           prevIcons.map(icon => ({
             ...icon,
-            change: updatedChanges.find(updated => updated.uuid === icon.uuid)?.change || icon.change,
-            price: updatedChanges.find(updated => updated.uuid === icon.uuid)?.price || icon.price,
+            change: updatedChanges.find((updated: Coin) => updated.uuid === icon.uuid)?.change || icon.change,
+            price: updatedChanges.find((updated: Coin) => updated.uuid === icon.uuid)?.price || icon.price,
           }))
         );
       } catch (error) {
@@ -163,8 +200,8 @@ useEffect(() => {
         });
         console.log('responseHistory', responseHistory.data.data.history);
         const sparkline = responseHistory.data.data.history;
-        const filteredData = sparkline.filter(p => p.price !== null);
-        const formattedData = filteredData.filter((item, index) => index % 1 === 0).map(item => ({
+        const filteredData = sparkline.filter((p: Coin) => p.price !== null);
+        const formattedData = filteredData.filter((item: Coin, index: number) => index % 1 === 0).map((item: Coin) => ({
           x: new Date(item.timestamp * 1000),
           y: Math.floor(item.price).toString()
         }));
@@ -203,13 +240,13 @@ useEffect(() => {
           setLinks(response.data.data.coin.links); 
           setStats({
             price: response.data.data.coin.price,
-            dayvolume: response.data.data.coin['24hVolume'],
-            marketcap: response.data.data.coin.marketCap,
+            dayVolume: response.data.data.coin['24hVolume'],
+            marketCap: response.data.data.coin.marketCap,
             numberOfExchanges: response.data.data.coin.numberOfExchanges,
             numberOfMarkets: response.data.data.coin.numberOfMarkets,
-            supplytotal: response.data.data.coin.supply.total,
-            supplycirculating: response.data.data.coin.supply.circulating,
-            supplymax: response.data.data.coin.supply.max,
+            supplyTotal: response.data.data.coin.supply.total,
+            supplyCirculating: response.data.data.coin.supply.circulating,
+            supplyMax: response.data.data.coin.supply.max,
           }); 
           setDescription(response.data.data.coin.description); 
           setDayPercentage(response.data.data.coin.change);  
@@ -252,8 +289,8 @@ useEffect(() => {
         });
         console.log('responseHistory', responseHistory.data.data.history);
         const sparkline = responseHistory.data.data.history;
-        const _sparkline = sparkline.filter((p) => p.price !== null);
-        const formattedData = _sparkline.filter((item, index) => index % 6 === 0).map(item => ({
+        const _sparkline = sparkline.filter((p: Coin) => p.price !== null);
+        const formattedData = _sparkline.filter((item: Coin, index: number) => index % 6 === 0).map((item: Coin) => ({
             x: new Date(item.timestamp * 1000),
             y: Math.floor(item.price).toString()
         }))
@@ -277,8 +314,8 @@ useEffect(() => {
         });
         console.log('responseHistory', responseHistory.data.data.history);
         const sparkline = responseHistory.data.data.history;
-        const _sparkline = sparkline.filter((p) => p.price !== null);
-        const formattedData = _sparkline.filter((item, index) => index % 3 === 0).map(item => ({
+        const _sparkline = sparkline.filter((p: Coin) => p.price !== null);
+        const formattedData = _sparkline.filter((item: Coin, index: number) => index % 3 === 0).map((item: Coin) => ({
             x: new Date(item.timestamp * 1000),
             y: Math.floor(item.price).toString()
         }))
@@ -302,8 +339,8 @@ useEffect(() => {
         });
         console.log('responseHistory', responseHistory.data.data.history);
         const sparkline = responseHistory.data.data.history;
-        const _sparkline = sparkline.filter((p) => p.price !== null);
-        const formattedData = _sparkline.filter((item, index) => index % 10 === 0).map(item => ({
+        const _sparkline = sparkline.filter((p: Coin) => p.price !== null);
+        const formattedData = _sparkline.filter((item: Coin, index: number) => index % 10 === 0).map((item: Coin) => ({
             x: new Date(item.timestamp * 1000),
             y: Math.floor(item.price).toString()
         }))
@@ -322,7 +359,7 @@ useEffect(() => {
 
 
   // when clikcing on a crypto currency
-  const handleSelectCrypto = (crypto) => {
+  const handleSelectCrypto = (crypto: Coin) => {
     console.log('uuid', crypto.uuid);
     setCryptoUuid(crypto.uuid);
     setCryptoData([]);
@@ -336,7 +373,7 @@ useEffect(() => {
 
 
     // Function to format timestamp
-    const formatTimestamp = (date) => {
+    const formatTimestamp = (date: Date) => {
         return date.toLocaleString('en-US', {
             year: 'numeric',
             month: 'long',
@@ -726,7 +763,9 @@ useEffect(() => {
             <div>
                 <div className='crypto-graph-box'>
                     <div className='d-flex'>
-                        <img className='mt-2 mr-3 icon-row-box' src={icon} alt={cryptoName} title={cryptoName + "Logo"}  />
+                        {icon && (
+                        <img className='mt-2 mr-3 icon-row-box' src={icon} alt={cryptoName ? cryptoName : "Logo"} title={cryptoName + "Logo"}  />
+                        )}
                         <h2 className='mr-5 mt-2'>{cryptoName}</h2>
                         <h1 title='Current Price' className={`current-price ${oldPrice > lastPrice ? "stock-down" : "stock-up"}`}>{oldPrice > lastPrice ? <FontAwesomeIcon icon={faArrowTrendDown} /> : <FontAwesomeIcon icon={faArrowTrendUp} />} ${Math.floor(lastPrice).toString()}</h1>
                         <h1 title='24 Hour Change' className={`ml-5 current-price ${dayPercentage < 0 ? "stock-down" : "stock-up"}`}> {dayPercentage > 0 ? "+"+dayPercentage : dayPercentage}%</h1>
@@ -772,30 +811,30 @@ useEffect(() => {
                     <h1 className='mb-4' style={{ fontSize: "1.4em", color: "white" }}>Financial Metrics for {cryptoName}</h1>
                         <div className='stats d-flex'>
                             <h1 className='mr-2'>Current Price:</h1>
-                            <h2>${stats.price}</h2>
+                            <h2>${stats && stats.price}</h2>
                         </div>
                         <div className='stats d-flex'>
                             <h1 className='mr-2'>Current  Market Cap:</h1>
-                            <h2>${stats.marketcap}</h2>
+                            <h2>${stats && stats.marketCap}</h2>
                         </div>
                         <div className='stats d-flex'>
                             <h1 className='mr-2'>Current  Supply Circulating:</h1>
-                            <h2>{stats.supplycirculating}</h2>
+                            <h2>{stats && stats.supplyCirculating}</h2>
                         </div>
                         <div className='stats d-flex'>
                             <h1 className='mr-2'>Current Supply Total:</h1>
-                            <h2>{stats.supplytotal}</h2>
+                            <h2>{stats && stats.supplyTotal}</h2>
                         </div>
                         <div className='stats d-flex'>
                             <h1 className='mr-2'>{cryptoName} Supply Max:</h1>
-                            <h2>{stats.supplymax}</h2>
+                            <h2>{stats && stats.supplyMax}</h2>
                         </div>
                     </div>
                     <div className='links-box'>
                         <h1 className='mb-3'>Read more about {cryptoName}</h1>
-                        {links.map((item) => (
+                        {links.map((item: Link) => (
                             <div>
-                                <a href={item.url} target='_blank' >{item.name}</a>
+                                <a href={item && item.url} target='_blank' >{item && item.name}</a>
                             </div>
                         ))}
                     </div>
